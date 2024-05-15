@@ -1,0 +1,90 @@
+name: V3
+on: push
+jobs:
+  prepare: 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir packages-dist
+          mkdir -p packages/a/dist
+          mkdir -p packages/b/dist
+          mkdir -p packages/c/dist
+          echo 123 > packages-dist/file1.txt
+          echo 123 > packages/a/dist/file2.txt
+          echo 123 > packages/b/dist/file3.txt
+          echo 123 > packages/c/dist/file4.txt
+
+      - run: tree
+
+      - name: Compress artifacts to speed up upload process
+        run: |
+          tar -zcf packages-dist.tar packages-dist
+          tar -zcf a.tar packages/a/dist
+          tar -zcf b.tar packages/b/dist
+          tar -zcf c.tar packages/c/dist
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: packages-dist
+          path: packages-dist.tar
+          retention-days: 3
+      - uses: actions/upload-artifact@v3
+        with:
+          name: a
+          path: a.tar
+          retention-days: 3
+      - uses: actions/upload-artifact@v3
+        with:
+          name: b
+          path: b.tar
+          retention-days: 3
+      - uses: actions/upload-artifact@v3
+        with:
+          name: c
+          path: c.tar
+          retention-days: 3
+
+  test-1:
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: packages-dist
+          path: "${{ env.GITHUB_WORKSPACE }}"
+      - name: Prepare artifacts
+        run: |
+          tar -zxf packages-dist.tar
+      - run: tree
+
+  test-2:
+    needs: [prepare]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v3
+        with:
+          name: packages-dist
+          path: "${{ env.GITHUB_WORKSPACE }}"
+      - uses: actions/download-artifact@v3
+        with:
+          name: a
+          path: "${{ env.GITHUB_WORKSPACE }}"
+      - uses: actions/download-artifact@v3
+        with:
+          name: b
+          path: "${{ env.GITHUB_WORKSPACE }}"
+      - uses: actions/download-artifact@v3
+        with:
+          name: c
+          path: "${{ env.GITHUB_WORKSPACE }}"
+      - name: Prepare artifacts
+        run: |
+          tar -zxf packages-dist.tar
+          tar -zxf a.tar
+          tar -zxf b.tar
+          tar -zxf c.tar
+      - run: tree
